@@ -44,26 +44,18 @@ function Room() {
         },
       })
   );
-  const [streamLocal, setStreamLocal] = useState(null);
 
   useEffect(() => {
-    // Peer connect
     peer?.on("open", (id) => {
       setPeerId(id);
-
-      // User join to room
       socket.emit("joinRoom", { name: user?.name, room, peerID: id });
 
-      // Notify to all members in the room
       socket.on("allMembers", (userPeers) => {
         let videos = document.getElementById("videoContainer");
         if (videos) videos.innerHTML = "";
         navigator.mediaDevices
           .getUserMedia({ video: true, audio: true })
           .then((stream) => {
-            setStreamLocal(stream);
-
-            // Play local stream and call stream to other users
             playStream(id, stream, true);
             userPeers.forEach((member) => {
               if (member !== id) {
@@ -79,40 +71,32 @@ function Room() {
         // Answer
         peer.on("call", (call) => {
           if (videos) videos.innerHTML = "";
-          call.answer(streamLocal);
-          playStream(id, streamLocal, true);
-          userPeers.forEach((member) => {
-            if (member !== id) {
-              call?.on("stream", (remoteStream) => {
-                playStream(member, remoteStream);
+          navigator.mediaDevices
+            .getUserMedia({ video: true, audio: true })
+            .then((stream) => {
+              call.answer(stream);
+              playStream(id, stream, true);
+              userPeers.forEach((member) => {
+                if (member !== id) {
+                  call?.on("stream", (remoteStream) => {
+                    playStream(member, remoteStream);
+                  });
+                }
               });
-            }
-          });
-          updateStream(userPeers);
+              updateStream(userPeers);
+            });
         });
 
         setMembers(userPeers);
       });
     });
-  }, [socket, room, user, peer, members, streamLocal]);
+  }, [socket, room, user, peer, members]);
 
   useEffect(() => {
     return () => {
       socket?.emit("peerClose", { peerId });
     };
   }, [socket, peerId]);
-
-  useEffect(() => {
-    return () => {
-      socket.disconnect();
-    };
-  }, [socket]);
-
-  useEffect(() => {
-    return () => {
-      streamLocal?.getTracks().forEach((track) => track.stop());
-    };
-  }, [streamLocal]);
 
   useEffect(() => {
     updateStream(members);
@@ -124,8 +108,8 @@ function Room() {
 
   function updateStream(userPeers) {
     let videos = document.getElementById("videoContainer");
+    let arr = [];
     if (videos) {
-      let arr = [];
       for (let i = 0; i < videos.childNodes.length; i++) {
         if (!userPeers.includes(videos.childNodes[i].id)) {
           arr.push(videos.childNodes[i]);
