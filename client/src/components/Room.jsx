@@ -109,17 +109,16 @@ function Room() {
   function updateStream(userPeers) {
     let videos = document.getElementById("videoContainer");
     let arr = [];
-    if (videos) {
-      for (let i = 0; i < videos.childNodes.length; i++) {
-        if (!userPeers.includes(videos.childNodes[i].id)) {
-          arr.push(videos.childNodes[i]);
-        }
+    for (let i = 0; i < videos.childNodes.length; i++) {
+      if (!userPeers.includes(videos.childNodes[i].id)) {
+        arr.push(videos.childNodes[i]);
       }
-
-      arr.forEach((video) => {
-        videos.removeChild(video);
-      });
+      console.log(arr);
     }
+
+    arr.forEach((video) => {
+      videos.removeChild(video);
+    });
   }
 
   function playStream(id, stream, isLocal = false) {
