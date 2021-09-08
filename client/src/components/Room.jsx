@@ -44,18 +44,26 @@ function Room() {
         },
       })
   );
+  const [streamLocal, setStreamLocal] = useState(null);
 
   useEffect(() => {
+    // Peer connect
     peer?.on("open", (id) => {
       setPeerId(id);
+
+      // User join to room
       socket.emit("joinRoom", { name: user?.name, room, peerID: id });
 
+      // Notify to all members in the room
       socket.on("allMembers", (userPeers) => {
         let videos = document.getElementById("videoContainer");
         if (videos) videos.innerHTML = "";
         navigator.mediaDevices
           .getUserMedia({ video: true, audio: true })
           .then((stream) => {
+            setStreamLocal(stream);
+            console.log("Local Stream");
+            // Play local stream and call stream to other users
             playStream(id, stream, true);
             userPeers.forEach((member) => {
               if (member !== id) {
@@ -74,6 +82,7 @@ function Room() {
           navigator.mediaDevices
             .getUserMedia({ video: true, audio: true })
             .then((stream) => {
+              console.log("Answer Stream");
               call.answer(stream);
               playStream(id, stream, true);
               userPeers.forEach((member) => {
@@ -90,13 +99,25 @@ function Room() {
         setMembers(userPeers);
       });
     });
-  }, [socket, room, user, peer, members]);
+  }, [socket, room, user, peer, members, streamLocal]);
 
   useEffect(() => {
     return () => {
       socket?.emit("peerClose", { peerId });
     };
   }, [socket, peerId]);
+
+  useEffect(() => {
+    return () => {
+      socket.disconnect();
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    return () => {
+      streamLocal?.getTracks().forEach((track) => track.stop());
+    };
+  }, [streamLocal]);
 
   useEffect(() => {
     updateStream(members);
@@ -108,17 +129,18 @@ function Room() {
 
   function updateStream(userPeers) {
     let videos = document.getElementById("videoContainer");
-    let arr = [];
-    for (let i = 0; i < videos.childNodes.length; i++) {
-      if (!userPeers.includes(videos.childNodes[i].id)) {
-        arr.push(videos.childNodes[i]);
+    if (videos) {
+      let arr = [];
+      for (let i = 0; i < videos.childNodes.length; i++) {
+        if (!userPeers.includes(videos.childNodes[i].id)) {
+          arr.push(videos.childNodes[i]);
+        }
       }
-      console.log(arr);
-    }
 
-    arr.forEach((video) => {
-      videos.removeChild(video);
-    });
+      arr.forEach((video) => {
+        videos.removeChild(video);
+      });
+    }
   }
 
   function playStream(id, stream, isLocal = false) {
