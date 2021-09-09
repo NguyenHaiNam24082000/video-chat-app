@@ -75,10 +75,14 @@ function Room() {
               }
             });
             updateStream(userPeers);
+          });
 
-            // Answer
-            peer.on("call", (call) => {
-              if (videos) videos.innerHTML = "";
+        // Answer
+        peer.on("call", (call) => {
+          if (videos) videos.innerHTML = "";
+          navigator.mediaDevices
+            .getUserMedia({ video: true, audio: true })
+            .then((stream) => {
               call.answer(stream);
               playStream(id, stream, true);
               userPeers.forEach((member) => {
@@ -90,7 +94,7 @@ function Room() {
               });
               updateStream(userPeers);
             });
-          });
+        });
 
         setMembers(userPeers);
       });
