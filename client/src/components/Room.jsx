@@ -32,36 +32,30 @@ function Room() {
               username: process.env.REACT_APP_ICE_USER,
               credential: process.env.REACT_APP_ICE_CREDENTIALS,
               urls: [
-                "turn:hk-turn1.xirsys.com:80?transport=udp",
-                "turn:hk-turn1.xirsys.com:3478?transport=udp",
-                "turn:hk-turn1.xirsys.com:80?transport=tcp",
-                "turn:hk-turn1.xirsys.com:3478?transport=tcp",
-                "turns:hk-turn1.xirsys.com:443?transport=tcp",
-                "turns:hk-turn1.xirsys.com:5349?transport=tcp",
+                "turn:ss-turn1.xirsys.com:80?transport=udp",
+                "turn:ss-turn1.xirsys.com:3478?transport=udp",
+                "turn:ss-turn1.xirsys.com:80?transport=tcp",
+                "turn:ss-turn1.xirsys.com:3478?transport=tcp",
+                "turns:ss-turn1.xirsys.com:443?transport=tcp",
+                "turns:ss-turn1.xirsys.com:5349?transport=tcp",
               ],
             },
           ],
         },
       })
   );
-  const [streamLocal, setStreamLocal] = useState(null);
 
   useEffect(() => {
-    // Peer connect
     peer?.on("open", (id) => {
       setPeerId(id);
-
-      // User join to room
       socket.emit("joinRoom", { name: user?.name, room, peerID: id });
 
-      // Notify to all members in the room
       socket.on("allMembers", (userPeers) => {
         let videos = document.getElementById("videoContainer");
         if (videos) videos.innerHTML = "";
         navigator.mediaDevices
           .getUserMedia({ video: true, audio: true })
           .then((stream) => {
-            // Play local stream and call stream to other users
             playStream(id, stream, true);
             userPeers.forEach((member) => {
               if (member !== id) {
@@ -105,18 +99,6 @@ function Room() {
   }, [socket, peerId]);
 
   useEffect(() => {
-    return () => {
-      socket.disconnect();
-    };
-  }, [socket]);
-
-  useEffect(() => {
-    return () => {
-      streamLocal?.getTracks().forEach((track) => track.stop());
-    };
-  }, [streamLocal]);
-
-  useEffect(() => {
     updateStream(members);
   }, [members]);
 
@@ -126,18 +108,17 @@ function Room() {
 
   function updateStream(userPeers) {
     let videos = document.getElementById("videoContainer");
-    if (videos) {
-      let arr = [];
-      for (let i = 0; i < videos.childNodes.length; i++) {
-        if (!userPeers.includes(videos.childNodes[i].id)) {
-          arr.push(videos.childNodes[i]);
-        }
+    let arr = [];
+    for (let i = 0; i < videos.childNodes.length; i++) {
+      if (!userPeers.includes(videos.childNodes[i].id)) {
+        arr.push(videos.childNodes[i]);
       }
-
-      arr.forEach((video) => {
-        videos.removeChild(video);
-      });
+      console.log(arr);
     }
+
+    arr.forEach((video) => {
+      videos.removeChild(video);
+    });
   }
 
   function playStream(id, stream, isLocal = false) {
